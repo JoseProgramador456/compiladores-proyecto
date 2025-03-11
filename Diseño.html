@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador léxico</title>
+</head>
+<body>
+    <h1>Ingresa tu texto</h1>
+    <form id="textForm">
+        <textarea id="longText" name="longText" rows="10" cols="50" placeholder="Escribe tu texto aquí..."></textarea>
+        <br><br>
+        <button type="submit">Enviar Texto</button>
+    </form>
+
+    <p id="responseMessage"></p> <!-- Para mostrar la respuesta del servidor -->
+
+    <script>
+        document.getElementById('textForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Evita que el formulario se envíe de la manera tradicional
+
+            // Obtén el texto del textarea
+            var text = document.getElementById('longText').value;
+
+            // Crea una instancia de XMLHttpRequest
+            var xhr = new XMLHttpRequest();
+
+            // Configura la solicitud AJAX
+            xhr.open('POST', '/guardar-texto', true); // Cambia '/guardar-texto' por la URL de tu servidor
+            xhr.setRequestHeader('Content-Type', 'application/json'); // Indica que envías datos JSON
+
+            // Define la función que manejará la respuesta del servidor
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) { // La solicitud ha sido completada
+                    if (xhr.status === 200) { // La solicitud fue exitosa
+                        var response = JSON.parse(xhr.responseText); // Convierte la respuesta a JSON
+                        document.getElementById('responseMessage').textContent = response.message; // Muestra la respuesta
+                    } else {
+                        document.getElementById('responseMessage').textContent = 'Hubo un error al enviar el texto.';
+                    }
+                }
+            };
+
+            // Envía el texto al servidor en formato JSON
+            xhr.send(JSON.stringify({ text: text }));
+        });
+    </script>
+</body>
+</html>
