@@ -21,36 +21,43 @@ public class AnalizadorLexico {
     private final Pattern patronComentarioUnaLinea = Pattern.compile("//.*");
     private final Pattern patronComentarioVariasLineas = Pattern.compile("/\\*.*?\\*/", Pattern.DOTALL);
     private final Pattern patronCadena = Pattern.compile("\"[^\"]*\""); // Nueva: cadenas de texto
+    private final Pattern patronChar = Pattern.compile("'[^']'"); // Caracteres entre comillas simples
 
     // Palabras reservadas del lenguaje (en inglés)
     private final Set<String> palabrasReservadas = new HashSet<>(Arrays.asList(
-            "int", "double", "bool", "char", "string", "if", "else", "for", "while", "print", "println"
+            "int", "double", "boolean", "char", "string", "if", "else", "for", "while", "print", "println"
     ));
+    
 
     public AnalizadorLexico(String codigoFuente) {
-        this.codigoFuente = codigoFuente;
+        this.codigoFuente = codigoFuente.toLowerCase(); // Convertir a minúsculas
     }
 
     public void analizar() {
-        String[] lineas = codigoFuente.split("\n");
+        // Eliminar comentarios de varias líneas (/* ... */) del código fuente
+        String codigoSinComentarios = eliminarComentariosVariasLineas(codigoFuente);
+    
+        // Dividir el código en líneas
+        String[] lineas = codigoSinComentarios.split("\n");
         for (int i = 0; i < lineas.length; i++) {
             String linea = lineas[i].trim();
-
-            // Ignorar comentarios de una línea
+    
+            // Ignorar comentarios de una línea (//)
             Matcher matcherComentarioUnaLinea = patronComentarioUnaLinea.matcher(linea);
             if (matcherComentarioUnaLinea.find()) {
                 linea = linea.substring(0, matcherComentarioUnaLinea.start()).trim();
             }
-
-            // Ignorar comentarios de varias líneas
-            Matcher matcherComentarioVariasLineas = patronComentarioVariasLineas.matcher(linea);
-            if (matcherComentarioVariasLineas.find()) {
-                linea = linea.replace(matcherComentarioVariasLineas.group(), "").trim();
-            }
-
+    
             // Procesar la línea
             procesarLinea(linea, i + 1);
         }
+    }
+    
+    private String eliminarComentariosVariasLineas(String codigo) {
+        // Expresión regular para eliminar comentarios de varias líneas (/* ... */)
+        Pattern patronComentarioVariasLineas = Pattern.compile("/\\*.*?\\*/", Pattern.DOTALL);
+        Matcher matcher = patronComentarioVariasLineas.matcher(codigo);
+        return matcher.replaceAll("");
     }
 
     private void procesarLinea(String linea, int numeroLinea) {
@@ -62,10 +69,25 @@ public class AnalizadorLexico {
                 columna++;
                 continue;
             }
-
+    
+            // Detectar comentarios de varias líneas (/* ... */)
+            if (linea.startsWith("/*")) {
+                int finComentario = linea.indexOf("*/");
+                if (finComentario == -1) {
+                    // Si no se encuentra el cierre del comentario, es un error
+                    errores.add("Error léxico en línea " + numeroLinea + ", columna " + columna + ": comentario de varias líneas no cerrado");
+                    return; // Salir del método porque no hay más que procesar en esta línea
+                } else {
+                    // Ignorar el comentario y continuar con el resto de la línea
+                    linea = linea.substring(finComentario + 2).trim();
+                    columna += finComentario + 2;
+                    continue;
+                }
+            }
+    
             // Identificar tokens
             boolean tokenEncontrado = false;
-
+    
             // Cadenas de texto
             Matcher matcherCadena = patronCadena.matcher(linea);
             if (!tokenEncontrado && matcherCadena.lookingAt()) {
@@ -76,6 +98,16 @@ public class AnalizadorLexico {
                 tokenEncontrado = true;
             }
 
+            // Caracteres
+            Matcher matcherChar = patronChar.matcher(linea);
+            if (!tokenEncontrado && matcherChar.lookingAt()) {
+                String token = matcherChar.group();
+                tokens.add(new Token("CHAR", token, numeroLinea, columna));
+                linea = linea.substring(token.length()).trim();
+                columna += token.length();
+                tokenEncontrado = true;
+        }
+    
             // Palabras reservadas e identificadores
             Matcher matcherIdentificador = patronIdentificador.matcher(linea);
             if (!tokenEncontrado && matcherIdentificador.lookingAt()) {
@@ -90,7 +122,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             // Números enteros y reales
             Matcher matcherNumeroReal = patronNumeroReal.matcher(linea);
             if (!tokenEncontrado && matcherNumeroReal.lookingAt()) {
@@ -100,7 +132,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             Matcher matcherNumeroEntero = patronNumeroEntero.matcher(linea);
             if (!tokenEncontrado && matcherNumeroEntero.lookingAt()) {
                 String token = matcherNumeroEntero.group();
@@ -109,7 +141,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             // Operadores aritméticos
             Matcher matcherOperadorAritmetico = patronOperadorAritmetico.matcher(linea);
             if (!tokenEncontrado && matcherOperadorAritmetico.lookingAt()) {
@@ -119,7 +151,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             // Operadores relacionales
             Matcher matcherOperadorRelacional = patronOperadorRelacional.matcher(linea);
             if (!tokenEncontrado && matcherOperadorRelacional.lookingAt()) {
@@ -129,7 +161,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             // Operador de asignación
             Matcher matcherOperadorAsignacion = patronOperadorAsignacion.matcher(linea);
             if (!tokenEncontrado && matcherOperadorAsignacion.lookingAt()) {
@@ -139,7 +171,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             // Operadores lógicos
             Matcher matcherOperadorLogico = patronOperadorLogico.matcher(linea);
             if (!tokenEncontrado && matcherOperadorLogico.lookingAt()) {
@@ -149,7 +181,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             // Signos especiales
             Matcher matcherSignosEspeciales = patronSignosEspeciales.matcher(linea);
             if (!tokenEncontrado && matcherSignosEspeciales.lookingAt()) {
@@ -159,7 +191,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             // Si no se encontró ningún token válido, es un error léxico
             if (!tokenEncontrado) {
                 errores.add("Error léxico en línea " + numeroLinea + ", columna " + columna + ": carácter inválido '" + linea.charAt(0) + "'");
@@ -168,7 +200,6 @@ public class AnalizadorLexico {
             }
         }
     }
-
     public List<Token> getTokens() {
         return tokens;
     }
