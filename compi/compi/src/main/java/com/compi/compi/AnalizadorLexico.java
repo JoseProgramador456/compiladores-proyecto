@@ -11,8 +11,8 @@ public class AnalizadorLexico {
 
     // Expresiones regulares para los tokens
     private final Pattern patronIdentificador = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
-    private final Pattern patronNumeroEntero = Pattern.compile("\\d+");
-    private final Pattern patronNumeroReal = Pattern.compile("\\d+\\.\\d+");
+    private final Pattern patronNumeroEntero = Pattern.compile("-?\\d+"); // Números enteros con signo negativo
+    private final Pattern patronNumeroReal = Pattern.compile("-?\\d+\\.\\d+"); // Números reales con signo negativo
     private final Pattern patronOperadorAritmetico = Pattern.compile("[+\\-*/^#]");
     private final Pattern patronOperadorRelacional = Pattern.compile("==|>=|<=|!=|<|>");
     private final Pattern patronOperadorAsignacion = Pattern.compile("="); // Operador de asignación
@@ -22,10 +22,13 @@ public class AnalizadorLexico {
     private final Pattern patronComentarioVariasLineas = Pattern.compile("/\\*.*?\\*/", Pattern.DOTALL);
     private final Pattern patronCadena = Pattern.compile("\"[^\"]*\""); // Nueva: cadenas de texto
     private final Pattern patronChar = Pattern.compile("'[^']'"); // Caracteres entre comillas simples
+    private final Pattern patronAutoIncremento = Pattern.compile("\\+\\+");
+    private final Pattern patronAutoDecremento = Pattern.compile("--");
+
 
     // Palabras reservadas del lenguaje (en inglés)
     private final Set<String> palabrasReservadas = new HashSet<>(Arrays.asList(
-            "int", "double", "boolean", "char", "string", "if", "else", "for", "while", "print", "println"
+            "int", "double", "boolean", "do","true","false","char", "string", "if", "else", "for", "while", "print", "println", "entero", "real", "booleano","caracter","cadena","longitud","acadena","escribirlinea","escribir"
     ));
     
 
@@ -88,6 +91,26 @@ public class AnalizadorLexico {
             // Identificar tokens
             boolean tokenEncontrado = false;
     
+            // AutoIncremento (++)
+            Matcher matcherAutoIncremento = patronAutoIncremento.matcher(linea);
+            if (!tokenEncontrado && matcherAutoIncremento.lookingAt()) {
+                String token = matcherAutoIncremento.group();
+                tokens.add(new Token("OP_AUTOINCREMENTO", token, numeroLinea, columna));
+                linea = linea.substring(token.length()).trim();
+                columna += token.length();
+                tokenEncontrado = true;
+            }
+    
+            // AutoDecremento (--)
+            Matcher matcherAutoDecremento = patronAutoDecremento.matcher(linea);
+            if (!tokenEncontrado && matcherAutoDecremento.lookingAt()) {
+                String token = matcherAutoDecremento.group();
+                tokens.add(new Token("OP_AUTODECREMENTO", token, numeroLinea, columna));
+                linea = linea.substring(token.length()).trim();
+                columna += token.length();
+                tokenEncontrado = true;
+            }
+    
             // Cadenas de texto
             Matcher matcherCadena = patronCadena.matcher(linea);
             if (!tokenEncontrado && matcherCadena.lookingAt()) {
@@ -97,7 +120,7 @@ public class AnalizadorLexico {
                 columna += token.length();
                 tokenEncontrado = true;
             }
-
+    
             // Caracteres
             Matcher matcherChar = patronChar.matcher(linea);
             if (!tokenEncontrado && matcherChar.lookingAt()) {
@@ -106,7 +129,7 @@ public class AnalizadorLexico {
                 linea = linea.substring(token.length()).trim();
                 columna += token.length();
                 tokenEncontrado = true;
-        }
+            }
     
             // Palabras reservadas e identificadores
             Matcher matcherIdentificador = patronIdentificador.matcher(linea);
@@ -214,7 +237,7 @@ public class AnalizadorLexico {
 
     public static void main(String[] args) {
         // Código fuente que se va a analizar
-        String codigoFuente = "int contador = 10;\n" +
+        String codigoFuente = "int contador = -10;\n" +
                               "double pi = 3.14;\n" +
                               "if (contador > 5) {\n" +
                               "    println(\"El contador es mayor que 5\");\n" +
