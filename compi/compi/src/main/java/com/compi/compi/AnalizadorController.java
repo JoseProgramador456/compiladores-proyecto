@@ -11,6 +11,7 @@ import java.util.Map;
 @RequestMapping("/api")
 public class AnalizadorController {
 
+    //mensajes de Prueba
     public AnalizadorController() {
         System.out.println("AnalizadorController creado!"); // Mensaje de log
     }
@@ -20,6 +21,7 @@ public class AnalizadorController {
             return "¡El controlador funciona!";
     }       
 
+    
     @PostMapping("/analizar")
     public AnalizadorResponse analizar(@RequestBody AnalizadorRequest request) {
     String codigoFuente = request.getCodigoFuente();

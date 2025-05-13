@@ -6,6 +6,8 @@ function App() {
   const [tokens, setTokens] = useState([]);
   const [symbolTable, setSymbolTable] = useState([]);
   const [errors, setErrors] = useState([]);
+  const [syntaxErrors, setSyntaxErrors] = useState([]);
+  const [algebraResults, setAlgebraResults] = useState([]);
 
   const handleAnalyze = async () => {
     try {
@@ -16,14 +18,16 @@ function App() {
         },
         body: JSON.stringify({ codigoFuente: text }),
       });
-  
+
       const data = await response.json();
-      console.log('Respuesta del backend:', data); // Esto imprimirá la respuesta en la consola del navegador
-  
+      console.log('Respuesta del backend:', data);
+
       if (data.tokens && data.tablaSimbolos && data.errores) {
         setTokens(data.tokens);
         setSymbolTable(Object.values(data.tablaSimbolos));
         setErrors(data.errores);
+        setSyntaxErrors(data.erroresSintacticos || []);
+        setAlgebraResults(data.resultadosAlgebraicos || []);
       } else {
         console.error('La respuesta del backend no tiene el formato esperado:', data);
       }
@@ -55,7 +59,9 @@ function App() {
           <h2>TOKENS GENERADOS</h2>
           <ul>
             {tokens.map((token, index) => (
-              <li key={index}>{token.tipo}: {token.valor} (Línea: {token.linea}, Columna: {token.columna})</li>
+              <li key={index}>
+                {token.tipo}: {token.valor} (Línea: {token.linea}, Columna: {token.columna})
+              </li>
             ))}
           </ul>
         </div>
@@ -87,11 +93,35 @@ function App() {
 
         {/* Errores */}
         <div className="errors">
-          <h2>ERRORES</h2>
+          <h2>ERRORES LÉXICOS</h2>
           <ul>
             {errors.map((error, index) => (
               <li key={index}>{error}</li>
             ))}
+          </ul>
+        </div>
+
+        {/* Errores Sintácticos */}
+        <div className="syntax-errors">
+          <h2>ERRORES SINTÁCTICOS</h2>
+          <ul>
+            {syntaxErrors.length > 0 ? (
+              syntaxErrors.map((err, idx) => <li key={idx}>{err}</li>)
+            ) : (
+              <li>No hay errores sintácticos</li>
+            )}
+          </ul>
+        </div>
+
+        {/* Resultados de Operaciones Algebraicas */}
+        <div className="algebra-results">
+          <h2>RESULTADOS DE OPERACIONES</h2>
+          <ul>
+            {algebraResults.length > 0 ? (
+              algebraResults.map((res, idx) => <li key={idx}>{res}</li>)
+            ) : (
+              <li>No hay operaciones detectadas</li>
+            )}
           </ul>
         </div>
       </div>
